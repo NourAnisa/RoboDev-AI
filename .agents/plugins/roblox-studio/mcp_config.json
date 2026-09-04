@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "roblox": {
+      "command": "python",
+      "args": [
+        "c:/Users/Nor Anisa/Downloads/ZeroScript-Free-1.5.3/ZeroScript-Free-1.5.3/launch_studio_mcp.py"
+      ]
+    }
+  }
+}
