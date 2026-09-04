@@ -1,7 +1,7 @@
 # 🤖 RoboDev AI - Smart Roblox Studio AI Assistant
 
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey?style=for-the-badge)](#-persyaratan-sistem)
-[![License](https://img.shields.io/badge/license-GPL--3.0-blue?style=for-the-badge)](ZeroScript-Free-1.5.3/LICENSE)
+[![License](https://img.shields.io/badge/license-GPL--3.0-blue?style=for-the-badge)](RoboDev-AI/LICENSE)
 
 **RoboDev AI** adalah asisten AI cerdas untuk Roblox Studio yang menghubungkan AI modern (**DeepSeek, ChatGPT, Google Gemini, Antigravity, 9Router, Kimi, GLM, Qwen, Arena, dan Meta AI**) langsung ke dalam Roblox Studio di komputer Anda.
 
@@ -75,7 +75,7 @@ Ikuti 4 langkah mudah di bawah ini untuk mulai menggunakan RoboDev AI:
 4. Klik tombol **Load unpacked** (Muat yang belum dibongkar).
 5. Pilih folder:
    ```
-   ZeroScript-Free-1.5.3/zeroscript-extension
+   RoboDev-AI/zeroscript-extension
    ```
 6. Ekstensi **RoboDev AI** sekarang telah terpasang di browser Anda.
 
@@ -97,10 +97,10 @@ Ikuti 4 langkah mudah di bawah ini untuk mulai menggunakan RoboDev AI:
 Bridge Python bertugas menghubungkan ekstensi AI di browser ke Roblox Studio.
 
 - **Untuk Windows**:
-  - Masuk ke folder `ZeroScript-Free-1.5.3`
+  - Masuk ke folder `RoboDev-AI`
   - Klik dua kali file **`start.bat`** (atau jalankan perintah `python bridge.py`)
 - **Untuk macOS**:
-  - Masuk ke folder `ZeroScript-Free-1.5.3`
+  - Masuk ke folder `RoboDev-AI`
   - Klik dua kali file **`MacOS_Start.command`**  
     *(Jika muncul notifikasi keamanan macOS: Buka System Settings > Privacy & Security > klik Open Anyway)*
 
@@ -166,5 +166,5 @@ RoboDev AI menyertakan plugin MCP siap pakai untuk Google Antigravity:
 
 ## 📜 Lisensi
 
-Proyek ini bersifat open-source dan dilisensikan di bawah [GPL-3.0 License](ZeroScript-Free-1.5.3/LICENSE).  
+Proyek ini bersifat open-source dan dilisensikan di bawah [GPL-3.0 License](RoboDev-AI/LICENSE).  
 Dikelola dan dikembangkan oleh [NourAnisa](https://github.com/NourAnisa/RoboDev-AI).
