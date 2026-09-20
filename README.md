@@ -3,7 +3,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey?style=for-the-badge)](#-persyaratan-sistem)
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue?style=for-the-badge)](RoboDev-AI/LICENSE)
 
-**RoboDev AI** adalah asisten AI cerdas untuk Roblox Studio yang menghubungkan AI modern (**DeepSeek, ChatGPT, Google Gemini, Antigravity, 9Router, Kimi, GLM, Qwen, Arena, dan Meta AI**) langsung ke dalam Roblox Studio di komputer Anda.
+**RoboDev AI** adalah asisten AI cerdas untuk Roblox Studio yang menghubungkan AI modern (**Claude AI, DeepSeek, ChatGPT, Google Gemini, Antigravity, 9Router, Kimi, GLM, Qwen, Arena, dan Meta AI**) langsung ke dalam Roblox Studio di komputer Anda.
 
 Dengan RoboDev AI, Anda dapat membangun game, menulis dan mengedit script Luau modern (`--!strict`), menginspeksi hierarki instance Roblox, menjalankan Luau secara instan, dan menyimpan memori project — semuanya langsung melalui obrolan AI biasa tanpa perlu coding manual yang rumit!
 
@@ -12,6 +12,7 @@ Dengan RoboDev AI, Anda dapat membangun game, menulis dan mengedit script Luau m
 ## 🌟 Fitur Utama & Keunggulan Cerdas
 
 1. **🤖 Dukungan Multi-Provider AI**:
+   - **Claude AI** (`claude.ai`, Anthropic)
    - **DeepSeek** (`chat.deepseek.com`, sangat direkomendasikan & gratis)
    - **ChatGPT** (`chatgpt.com`)
    - **Google Gemini** (`gemini.google.com`)
@@ -111,7 +112,8 @@ Sebuah jendela terminal/command prompt akan terbuka dan menunjukkan status Bridg
 ### Langkah 4: Mulai Sesi Pembuatan Game dengan AI
 
 1. Buka website AI pilihan Anda:
-   - [DeepSeek Chat](https://chat.deepseek.com) *(Sangat Direkomendasikan)*
+   - [Claude AI](https://claude.ai) *(Anthropic Claude 3.5 / 3.7 Sonnet)*
+   - [DeepSeek Chat](https://chat.deepseek.com) *(Sangat Direkomendasikan & Gratis)*
    - [ChatGPT](https://chatgpt.com)
    - [Google Gemini](https://gemini.google.com)
    - [Kimi AI](https://www.kimi.ai)
