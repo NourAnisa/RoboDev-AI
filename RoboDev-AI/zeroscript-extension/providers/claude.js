@@ -17,6 +17,29 @@ const ZSProvider = (() => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   let diag = () => {};
 
+  async function waitFor(pred, timeout = 3000) {
+    const t0 = Date.now();
+    while (Date.now() - t0 < timeout) {
+      if (pred()) return true;
+      await sleep(120);
+    }
+    return false;
+  }
+
+  function isVisible(el) {
+    if (!el || !el.isConnected) return false;
+    if (el.offsetParent !== null) return true;
+    try {
+      if (el.checkVisibility && !el.checkVisibility({ checkOpacity: false, checkVisibilityCSS: false })) {
+        return false;
+      }
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    } catch {
+      return false;
+    }
+  }
+
   const S = {
     // Turns
     userItem: '[data-testid="user-message"], .font-user-message, [data-message-author="user"]',
@@ -25,10 +48,27 @@ const ZSProvider = (() => {
     reply: '.font-claude-message, [data-testid="assistant-message"], .prose',
     thinking: '[data-testid="thinking-content"], .thinking-container, [class*="thinking"]',
     // Composer
-    editor: 'div[contenteditable="true"].ProseMirror, fieldset div[contenteditable="true"], div[contenteditable="true"]',
-    composer: 'fieldset, form, div[class*="composer"]',
-    sendBtn: 'button[aria-label*="Send" i], button[aria-label*="Envoyer" i], button[data-testid="send-button"]',
-    stopBtn: 'button[aria-label*="Stop" i], button[aria-label*="Arrêter" i], button[data-testid="stop-button"]',
+    editor: [
+      'div[contenteditable="true"].ProseMirror',
+      '.ProseMirror[contenteditable]',
+      'div[contenteditable="plaintext-only"].ProseMirror',
+      'div[contenteditable="true"]',
+      'div[contenteditable="plaintext-only"]',
+      '[contenteditable="true"]',
+      '[contenteditable="plaintext-only"]',
+      '[contenteditable]',
+      '.ProseMirror',
+      '[role="textbox"]',
+      'p[data-placeholder]',
+      'div[data-placeholder]',
+      'textarea',
+      '[data-testid*="editor"]',
+      '[data-testid*="composer"] [contenteditable]',
+      'fieldset [contenteditable]',
+    ].join(', '),
+    composer: 'fieldset, form, div[class*="composer"], div[class*="chat-input"]',
+    sendBtn: 'button[aria-label*="Send" i], button[aria-label*="Envoyer" i], button[aria-label*="Kirim" i], button[aria-label*="send message" i], button[data-testid*="send"]',
+    stopBtn: 'button[aria-label*="Stop" i], button[aria-label*="Arrêter" i], button[aria-label*="Berhenti" i], button[data-testid*="stop"]',
     codeWrap: "pre, .code-block",
     errorSurfaces: '[role="alert"], [data-testid*="error"], [class*="toast"], [class*="alert"], [class*="error-message"]',
   };
@@ -136,10 +176,49 @@ const ZSProvider = (() => {
   const lastAssistantId = () => itemKey(lastAssistant());
 
   const getEditor = () => {
-    for (const e of document.querySelectorAll(S.editor)) {
-      if (!e.closest("#zs-root") && e.offsetParent !== null) return e;
+    // 1. Direct candidate search: visible editable elements outside #zs-root
+    const candidates = [];
+    for (const sel of [
+      'fieldset [contenteditable]',
+      'form [contenteditable]',
+      'div[class*="composer"] [contenteditable]',
+      'div[class*="chat-input"] [contenteditable]',
+      '.ProseMirror[contenteditable]',
+      'div[contenteditable="true"].ProseMirror',
+      'div[contenteditable="plaintext-only"]',
+      'div[contenteditable="true"]',
+      '[contenteditable="plaintext-only"]',
+      '[contenteditable="true"]',
+      '[contenteditable]',
+      'div[role="textbox"]',
+      '[role="textbox"]',
+      '.ProseMirror',
+      'p[data-placeholder]',
+      'div[data-placeholder]',
+      'textarea',
+    ]) {
+      for (const el of document.querySelectorAll(sel)) {
+        if (!el.closest("#zs-root") && isVisible(el)) {
+          const ed = el.closest('[contenteditable="true"], [contenteditable="plaintext-only"], [contenteditable], [role="textbox"], .ProseMirror') || el;
+          if (!candidates.includes(ed)) candidates.push(ed);
+        }
+      }
+      if (candidates.length) break;
     }
-    return document.querySelector(S.editor);
+
+    if (candidates.length > 0) {
+      // Pick the one inside the composer card, or the last in DOM order (bottom composer)
+      const composerCard = candidates.find((e) => e.closest('fieldset, form, div[class*="composer"], div[class*="chat-input"]'));
+      return composerCard || candidates[candidates.length - 1];
+    }
+
+    // Fallback: any matching element outside #zs-root
+    const anyMatches = [...document.querySelectorAll(S.editor)].filter((e) => !e.closest("#zs-root"));
+    if (anyMatches.length > 0) {
+      const last = anyMatches[anyMatches.length - 1];
+      return last.closest('[contenteditable], [role="textbox"], .ProseMirror') || last;
+    }
+    return null;
   };
 
   const editorText = () => {
@@ -154,7 +233,14 @@ const ZSProvider = (() => {
   const composerFrame = () => {
     const ed = getEditor();
     if (!ed) return null;
-    return ed.closest("fieldset") || ed.closest("form") || ed.closest('div[class*="composer"]') || ed.parentElement;
+    return (
+      ed.closest("fieldset") ||
+      ed.closest("form") ||
+      ed.closest('div[class*="composer"]') ||
+      ed.closest('div[class*="chat-input"]') ||
+      ed.closest('div[class*="relative"]') ||
+      ed.parentElement
+    );
   };
 
   function barMount() {
@@ -164,42 +250,70 @@ const ZSProvider = (() => {
   }
 
   function barAnchor() {
-    return composerFrame() || getEditor();
+    const ed = getEditor();
+    if (!ed) return null;
+    let n = ed;
+    for (let i = 0; i < 10 && n && n.parentElement; i++) {
+      if (n.matches && (
+        n.matches('fieldset, form, [class*="composer"], [class*="chat-input"]') ||
+        [...(n.classList || [])].some((c) => c.startsWith("rounded") || c.includes("border"))
+      )) {
+        if (n.querySelector('button, [role="button"]')) return n;
+      }
+      n = n.parentElement;
+    }
+    return composerFrame() || ed;
   }
 
+  let _origContentEditable = null;
   let _locked = false;
   function setInputLock(on) {
     _locked = on;
     const ed = getEditor();
     if (!ed) return;
-    ed.setAttribute("contenteditable", on ? "false" : "true");
-    if (on) ed.setAttribute("data-zs-locked", "1");
-    else ed.removeAttribute("data-zs-locked");
-  }
-
-  function submitButton() {
-    const s = document.querySelector(S.sendBtn);
-    if (s && s.offsetParent !== null) return s;
-    const stop = document.querySelector(S.stopBtn);
-    if (stop && stop.offsetParent !== null) return stop;
-    return null;
+    if (on) {
+      if (_origContentEditable === null) {
+        _origContentEditable = ed.getAttribute("contenteditable") || "true";
+      }
+      ed.setAttribute("contenteditable", "false");
+      ed.setAttribute("data-zs-locked", "1");
+    } else {
+      ed.setAttribute("contenteditable", _origContentEditable || "true");
+      ed.removeAttribute("data-zs-locked");
+      _origContentEditable = null;
+    }
   }
 
   function isStopBtn(b) {
     if (!b) return false;
     const aria = (b.getAttribute("aria-label") || "").toLowerCase();
     const testid = (b.getAttribute("data-testid") || "").toLowerCase();
-    return aria.includes("stop") || aria.includes("arr") || testid.includes("stop");
+    return aria.includes("stop") || aria.includes("arr") || aria.includes("berhenti") || testid.includes("stop");
+  }
+
+  function submitButton() {
+    for (const sel of [S.sendBtn, S.stopBtn, 'button[data-testid*="send"]', 'button[aria-label*="send" i]']) {
+      for (const b of document.querySelectorAll(sel)) {
+        if (!b.closest("#zs-root") && isVisible(b)) return b;
+      }
+    }
+    return null;
   }
 
   function sendButton() {
-    const b = document.querySelector(S.sendBtn);
-    return (b && !isStopBtn(b) && b.offsetParent !== null) ? b : null;
+    for (const b of document.querySelectorAll(S.sendBtn)) {
+      if (!b.closest("#zs-root") && isVisible(b) && !isStopBtn(b)) return b;
+    }
+    const s = submitButton();
+    return (s && !isStopBtn(s)) ? s : null;
   }
 
   function stopButton() {
-    const b = document.querySelector(S.stopBtn) || submitButton();
-    return (b && isStopBtn(b) && b.offsetParent !== null) ? b : null;
+    for (const b of document.querySelectorAll(S.stopBtn)) {
+      if (!b.closest("#zs-root") && isVisible(b) && isStopBtn(b)) return b;
+    }
+    const s = submitButton();
+    return (s && isStopBtn(s)) ? s : null;
   }
 
   function streamText(item) {
@@ -239,7 +353,7 @@ const ZSProvider = (() => {
   function turnHalted() { return false; }
   function findContinueBtn() {
     for (const b of document.querySelectorAll("button")) {
-      if (b.offsetParent === null) continue;
+      if (!isVisible(b)) continue;
       if (RE.continueBtn.test((b.innerText || "").trim())) return b;
     }
     return null;
@@ -272,33 +386,54 @@ const ZSProvider = (() => {
   }
 
   function selectAll(ed) {
-    ed.focus();
-    const sel = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(ed);
-    sel.removeAllRanges();
-    sel.addRange(range);
+    try {
+      ed.focus();
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(ed);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch {}
   }
 
   async function typeAndSend(text, images) {
     const ed = getEditor();
     if (!ed) throw new Error("Claude input box not found");
     const relock = _locked;
-    if (relock) ed.setAttribute("contenteditable", "true");
+    if (relock) ed.setAttribute("contenteditable", _origContentEditable || "true");
     try {
       selectAll(ed);
       const lines = String(text).split("\n");
       for (let i = 0; i < lines.length; i++) {
         if (lines[i]) document.execCommand("insertText", false, lines[i]);
         if (i < lines.length - 1) document.execCommand("insertLineBreak");
+        if (i && i % 40 === 0) await sleep(0);
       }
       ed.dispatchEvent(new Event("input", { bubbles: true }));
+
+      // Fallback if execCommand did not set text
+      if ((ed.textContent || "").trim() === "" && text.trim()) {
+        try {
+          selectAll(ed);
+          const dt = new DataTransfer();
+          dt.setData("text/plain", text);
+          ed.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+        } catch {}
+        if ((ed.textContent || "").trim() === "") {
+          ed.textContent = text;
+        }
+        ed.dispatchEvent(new Event("input", { bubbles: true }));
+      }
 
       if (images && images.length) {
         try { await attachImages(images); } catch {}
       }
 
-      await sleep(300);
+      await waitFor(() => {
+        const b = sendButton();
+        return b && !b.disabled && b.getAttribute("aria-disabled") !== "true";
+      }, 2500);
+
       const btn = sendButton();
       if (btn && !btn.disabled && btn.getAttribute("aria-disabled") !== "true") {
         btn.click();
@@ -315,13 +450,17 @@ const ZSProvider = (() => {
     }
   }
 
-  function enforceComposer() { return { ready: true }; }
-  async function ensureComposerReady() { return { ready: !!getEditor() }; }
+  function enforceComposer() { return { ready: !!getEditor() }; }
+  async function ensureComposerReady(reason) {
+    diag("mode_ready", { reason, provider: "claude" });
+    const ok = await waitFor(() => !!getEditor(), 5000);
+    return { ready: ok || !!getEditor() };
+  }
 
   function scanError() {
     try {
       for (const el of document.querySelectorAll(S.errorSurfaces)) {
-        if (el.offsetParent === null) continue;
+        if (!isVisible(el)) continue;
         const t = (el.innerText || "").trim();
         if (t.length > 8 && t.length < 500 && RE.contextLimit.test(t)) return t.slice(0, 240);
       }
@@ -364,7 +503,10 @@ const ZSProvider = (() => {
     } catch {}
   }
 
-  const conversationKey = () => (/^\/chat\//.test(location.pathname) ? location.pathname : "");
+  const conversationKey = () => {
+    const m = location.pathname.match(/\/(?:chat|c)\/([a-zA-Z0-9_-]+)/);
+    return m ? m[0] : (/^\/chat\//.test(location.pathname) ? location.pathname : "");
+  };
 
   function installSendHooks(handlers) {
     document.addEventListener(
