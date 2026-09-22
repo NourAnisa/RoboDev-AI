@@ -270,26 +270,21 @@ const ZSProvider = (() => {
     return ed.closest("[class*='prosemirror-parent']") || ed;
   };
 
-  // Where the ZeroScript bar lives: INSIDE the rounded composer surface (the
-  // element carrying --composer-surface-primary), like DeepSeek - not floating
-  // above it, which is narrower than the composer and covers the page's greeting.
-  //
-  // That surface lays its children out in a CSS grid whose template is
-  //   "header header header" / "leading primary trailing" / ". footer ."
-  // so a child with no grid-area gets auto-placed into a cell and steals the
-  // editor's column - validated live: the input collapsed to zero width. The
-  // `header` area is the full-width row across the top, exactly the slot we want,
-  // and it is empty by default (1px tall). overlay.css puts our bar there via
-  // `#zs-bar.zs-prov-chatgpt { grid-area: header; }`.
+  // Where the RoboDev AI bar lives: mounted ABOVE the composer card,
+  // spanning the composer's full width without intruding into the input area.
+  // In ChatGPT's new layout, mounting inside the composer-surface squished the
+  // editor and covered native controls (+, reasoning picker, mic, send).
   function barMount() {
     const ed = getEditor();
     if (!ed) return null;
-    const box = ed.closest("[class*='composer-surface']");
-    if (!box) return null;
-    // Skip our own bar if already mounted, otherwise we'd insert it before itself.
-    let before = box.firstElementChild;
-    if (before && before.id === "zs-bar") before = before.nextElementSibling;
-    return { parent: box, before, inside: true };
+    const form = ed.closest("form");
+    const frame = form || ed.closest("[class*='composer-surface']") || ed.parentElement;
+    if (!frame || !frame.parentElement) return null;
+    return { parent: frame.parentElement, before: frame, inside: false };
+  }
+
+  function barAnchor() {
+    return composerFrame() || getEditor();
   }
 
   // ── Input lock ────────────────────────────────────────────────────────────
@@ -921,8 +916,7 @@ const ZSProvider = (() => {
     allItems, isUserItem, isAssistantItem, itemText, classifyText,
     assistantCount, userCount, lastAssistant, lastAssistantId, itemKey, readAssistant,
     streamLen, snapshot,
-    // composer / state
-    getEditor, editorText, chatIsEmpty, isFreshChat, composerFrame, barMount,
+    getEditor, editorText, chatIsEmpty, isFreshChat, composerFrame, barMount, barAnchor,
     // Cover the scrolling text band, and lift the core's 200px clamp past that
     // band's own ~245px ceiling so a full composer is covered edge to edge.
     coverTarget,

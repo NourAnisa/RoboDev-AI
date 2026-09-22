@@ -102,36 +102,23 @@ html.zs-light #zs-bar.zs-bar-anchored {
    editor's cell and collapse the input to zero width. The bottom margin keeps it
    off the input row; the negative side margins let it reach the card's padding
    edges so it reads as part of the composer, like on DeepSeek. */
-/* Selector carries .zs-bar-inline.zs-bar-inside on purpose: the generic
-   `#zs-bar.zs-bar-inline.zs-bar-inside` rule above is more specific than a plain
-   `#zs-bar.zs-prov-chatgpt`, so the margin below was silently losing to it. */
+/* ChatGPT's composer surface:
+   Mounted ABOVE the composer card (inside: false) so it never intrudes on
+   ChatGPT's prompt input, buttons (+, reasoning, mic, send/stop). */
+#zs-bar.zs-bar-inline.zs-prov-chatgpt {
+  margin: 0 auto 10px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 #zs-bar.zs-bar-inline.zs-bar-inside.zs-prov-chatgpt {
   grid-area: header;
-  /* The bottom margin has to clear more than it looks: the input row's wrapper
-     carries -my-2.5, so its painted box starts 10px ABOVE its grid row. At 6px
-     the bar's separator line ended up 4px INSIDE that box - and therefore under
-     the "Agent is working…" cover, which sits exactly on it (measured live: bar
-     bottom 739.1, band top 735.1). 14px puts the line ~4px clear of the box, so
-     the separator stays visible while the agent runs. */
   margin: 0 -8px 14px;
   width: auto;
-  /* The card's corner radius is 28px and the bar sits flush with its top edge,
-     so the bar's outermost children land inside the corner arc. With the
-     generic 16px padding the Discord button ended up 8px from the card edge and
-     7.3px from its top - its top-right corner falls OUTSIDE the rounded rect and
-     was being sliced off by the card's `overflow-clip` (measured live). 24px
-     puts both ends 16px in from the card edge, which clears the arc with room to
-     spare and stops the dot crowding the left curve. Same problem, and same
-     fix, as the Meta AI rule below. */
   padding-left: 24px;
   padding-right: 24px;
 }
-/* The input row's wrapper carries -my-2.5, so its painted box overflows its grid
-   row by 10px top and bottom. The card only has 5px of vertical padding and
-   clips (overflow: clip), so with our header row added the placeholder text ran
-   into - and was sliced by - the card's bottom edge ("Agent is working…"). Give
-   the card enough bottom padding to clear that overhang, only while our bar is
-   inside it. */
 [class*="composer-surface"]:has(> #zs-bar.zs-prov-chatgpt) { padding-bottom: 12px; }
 
 /* Meta AI's composer card has a large corner radius (rounded-32 = 32px), so the
